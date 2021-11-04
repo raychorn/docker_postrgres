@@ -68,6 +68,19 @@ else
     adduser --disabled-password --gecos GECOS --shell /bin/bash --home /home/$USERNAME $USERNAME
 fi
 
+su - $USERNAME
+
+sleep 10
+pg_ctlcluster 12 main start
+
+sleep 10
+PSQL=$(which psql)
+
+if [ -z "$PSQL" ]; then
+    echo "Missing PSQL:$PSQL, cannot continue."
+    sleeping
+fi
+
 POSTGRESUSER=$(echo $POSTGRES_USER)
 
 if [ -z "$POSTGRESUSER" ]; then
@@ -78,10 +91,6 @@ fi
 echo "2. Creating POSTGRESUSER:$POSTGRESUSER"
 createuser -s -i -d -r -l -w $POSTGRESUSER
 
-sleep 10
-pg_ctlcluster 12 main start
-
-sleep 10
 PGTEST1=$(psql -U $POSTGRESUSER -d postgres -c "select 1" | grep -v "1 row")
 
 if [ -z "$PGTEST1" ]; then
