@@ -57,21 +57,42 @@ if [ -z "$POSTGRES_STATUS" ]; then
     sleeping
 fi
 
+POSTGRESUSER=$(echo $POSTGRES_USER)
+if [ -z "$POSTGRESUSER" ]; then
+    echo "Undefined POSTGRESUSER:$POSTGRESUSER, cannot continue."
+    sleeping
+fi
+
+echo "POSTGRESUSER:$POSTGRESUSER"
+echo "POSTGRESPASSWORD:$POSTGRESPASSWORD"
+echo "POSTGRES_DB:$POSTGRES_DB"
+
 USERNAME=postgres
 
-getent passwd $USERNAME > /dev/null 2&>1
-if [ $? -eq 0 ]; then
+if id "$USERNAME" &>/dev/null; then
     echo "User USERNAME:$USERNAME exists so setting the password."
-    echo -e "0rang3z3bra\n0rang3z3bra" | (passwd $USERNAME)
+    echo -e "$PGPASSWORD\n$PGPASSWORD" | (passwd $USERNAME)
 else
     echo "User USERNAME:$USERNAME does not exist so creating the user."
     adduser --disabled-password --gecos GECOS --shell /bin/bash --home /home/$USERNAME $USERNAME
 fi
 
-su - $USERNAME
+SRC=/postgresql.conf
+DST=/etc/postgresql/12/main/postgresql.conf
 
-sleep 10
-pg_ctlcluster 12 main start
+if [ ! -f "$SRC" ]; then
+    echo "Cannot find File $SRC exists so cannot continue."
+    sleeping
+fi
+
+if [ -f "$DST" ]; then
+    echo "File $DST exists so mv $SRC to $DST."
+    mv -f $SRC $DST
+    chown postgres:postgres $DST
+fi
+
+echo "Starting postgresql"
+service postgresql start
 
 sleep 10
 PSQL=$(which psql)
@@ -81,22 +102,20 @@ if [ -z "$PSQL" ]; then
     sleeping
 fi
 
-POSTGRESUSER=$(echo $POSTGRES_USER)
-
-if [ -z "$POSTGRESUSER" ]; then
-    echo "Undefined POSTGRESUSER:$POSTGRESUSER, cannot continue."
-    sleeping
-fi
+#echo "Time to debug."
+#sleeping
 
 echo "2. Creating POSTGRESUSER:$POSTGRESUSER"
-createuser -s -i -d -r -l -w $POSTGRESUSER
+su $USERNAME -c "psql -c \"create user $POSTGRESUSER;\""
 
-PGTEST1=$(psql -U $POSTGRESUSER -d postgres -c "select 1" | grep -v "1 row")
+echo "3. Creating database POSTGRES_DB:$POSTGRES_DB"
+su $USERNAME -c "psql -c \"create database $POSTGRES_DB;\""
 
-if [ -z "$PGTEST1" ]; then
-    echo "PGTEST1:$PGTEST1, cannot continue."
-    sleeping
-fi
+echo "4. Change user password POSTGRES_DB:$POSTGRES_DB"
+su $USERNAME -c "psql -c \"alter user $POSTGRESUSER with encrypted password '$POSTGRESPASSWORD';\""
+
+echo "5. Grant POSTGRESUSER:$POSTGRESUSER all privileges on POSTGRES_DB:$POSTGRES_DB"
+su $USERNAME -c "psql -c \"grant all privileges on database $POSTGRES_DB to $POSTGRESUSER;\""
 
 PGTEST2=$(netstat -tulpn | grep 5432 | grep LISTEN)
 
@@ -105,9 +124,16 @@ if [ -z "$PGTEST2" ]; then
     sleeping
 fi
 
-#psql -c "ALTER ROLE $POSTGRESUSER WITH PASSWORD '$POSTGRESPASSWORD';"
+echo "Done prepping the server with the database and user."
 
-echo "Done."
-sleeping
-
-
+while true; do
+    echo "Making sure the server is running."
+    TEST=$(netstat -tunlp | grep 5432 | grep LISTEN)
+    if [ -z "$TEST" ]; then
+        echo "Restarting the server."
+        service postgresql restart
+    else
+        echo "Server is running."
+    fi
+    sleep 10
+done
