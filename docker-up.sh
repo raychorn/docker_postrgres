@@ -15,10 +15,19 @@ if [ ! -f "$ENTRYPOINT" ]; then
     exit 1
 fi
 
-POSTGRESQLCONF=$ROOTDIR/postgresql.conf
+POSTGRESQLCONF_FILE=postgresql.conf
+POSTGRESQLCONF=$ROOTDIR/$POSTGRESQLCONF_FILE
 
 if [ ! -f "$POSTGRESQLCONF" ]; then
     echo "POSTGRESQLCONF:$POSTGRESQLCONF script not found."
+    exit 1
+fi
+
+PGHBACONF_FILE=pg_hba.conf
+PGHBACONF=$ROOTDIR/$PGHBACONF_FILE
+
+if [ ! -f "$PGHBACONF" ]; then
+    echo "PGHBACONF:$PGHBACONF script not found."
     exit 1
 fi
 
@@ -32,7 +41,11 @@ fi
 echo "ENTRYPOINT:$ENTRYPOINT --> $CID:/entrypoint.sh"
 docker cp $ENTRYPOINT $CID:/entrypoint.sh
 
-#docker cp $POSTGRESQLCONF $CID:/etc/postgresql/12/main/postgresql.conf
-#docker cp $POSTGRESQLCONF $CID:/postgresql.conf
+# BEGIN: DO NOT REMOVE THESE LINES
+docker cp $PGHBACONF $CID:/$PGHBACONF_FILE
+docker cp $POSTGRESQLCONF $CID:/$POSTGRESQLCONF_FILE
+# END!!! DO NOT REMOVE THESE LINES
+
+#docker exec -it $CID /bin/bash -c "ls -la /"
 
 docker exec -it $CID /bin/bash -c "chmod +x /entrypoint.sh && /entrypoint.sh 0"

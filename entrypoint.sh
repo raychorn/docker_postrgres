@@ -21,6 +21,23 @@ sleeping () {
     fi
 }
 
+move_file () {
+    local resp='0'
+    if [ -f "$1" ]; then
+        resp='1'
+        if [ -f "$2" ]; then
+            mv -f "$1" "$2"
+            chown postgres:postgres $2
+            resp='2'
+        else
+            resp='-2'
+        fi
+    else
+        resp='-1'
+    fi
+    echo "$resp"
+}
+
 apt-get update -y && apt-get upgrade -y
 
 export DEBIAN_FRONTEND=noninteractive
@@ -77,19 +94,19 @@ else
     adduser --disabled-password --gecos GECOS --shell /bin/bash --home /home/$USERNAME $USERNAME
 fi
 
+##### BEGIN: postgresql.conf
 SRC=/postgresql.conf
-DST=/etc/postgresql/12/main/postgresql.conf
+DST=/etc/postgresql/12/main$SRC
 
-if [ ! -f "$SRC" ]; then
-    echo "Cannot find File $SRC exists so cannot continue."
-    sleeping
-fi
+move_file $SRC $DST
+##### END!!! postgresql.conf
 
-if [ -f "$DST" ]; then
-    echo "File $DST exists so mv $SRC to $DST."
-    mv -f $SRC $DST
-    chown postgres:postgres $DST
-fi
+##### BEGIN: pg_hba.conf
+SRC=/pg_hba.conf
+DST=/etc/postgresql/12/main$SRC
+
+move_file $SRC $DST
+##### END!!! pg_hba.conf
 
 echo "Starting postgresql"
 service postgresql start
@@ -126,14 +143,18 @@ fi
 
 echo "Done prepping the server with the database and user."
 
-while true; do
-    echo "Making sure the server is running."
-    TEST=$(netstat -tunlp | grep 5432 | grep LISTEN)
-    if [ -z "$TEST" ]; then
-        echo "Restarting the server."
-        service postgresql restart
-    else
-        echo "Server is running."
-    fi
-    sleep 10
-done
+LOGFILE=/var/log/postgresql/postgresql-12-main.log
+
+tail -50 -f $LOGFILE
+
+#while true; do
+#    echo "Making sure the server is running."
+#    TEST=$(netstat -tunlp | grep 5432 | grep LISTEN)
+#    if [ -z "$TEST" ]; then
+#        echo "Restarting the server."
+#        service postgresql restart
+#    else
+#        echo "Server is running."
+#    fi
+#    sleep 10
+#done
