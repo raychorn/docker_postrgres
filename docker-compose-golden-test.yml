@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  postgres12:
+    image: ubuntu:focal
+    container_name: postgres12
+    environment:
+      TZ: America/Denver
+      POSTGRES_USER: securexdev
+      POSTGRES_PASSWORD: secureme2020
+      POSTGRES_DB: securex_assets
+    ports:
+    - "5432:5432"
+    tty: true
+    stdin_open: true
+    #command: ["ls -la"] # /workspaces/entrypoint.sh
+    #command: >
+    #    bash -c "python manage.py migrate
+    #    && python manage.py runserver 0.0.0.0:8000"
+    logging:
+        options:
+            max-size: 1g
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 1536M
+    restart: unless-stopped
