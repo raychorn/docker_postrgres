@@ -2,7 +2,7 @@ version: '3'
 
 services:
   postgres12:
-    image: 10.0.0.164:5000/postgres12:goldenv0.9
+    image: 10.0.0.164:5000/postgres12:goldenv0.92
     container_name: postgres12
     environment:
       TZ: America/Denver

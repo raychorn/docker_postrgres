@@ -146,15 +146,19 @@ echo "Done prepping the server with the database and user."
 cat << EOF > /startup.sh
 #!/bin/bash
 service postgresql start
+while true; do
+    sleep 999999999
+done
 EOF
 
 if [ -f /startup.sh ]; then
     chmod +x /startup.sh
 fi
 
-LOGFILE=/var/log/postgresql/postgresql-12-main.log
+#LOGFILE=/var/log/postgresql/postgresql-12-main.log
+#tail -50 -f $LOGFILE
 
-tail -50 -f $LOGFILE
+sleeping
 
 #while true; do
 #    echo "Making sure the server is running."
