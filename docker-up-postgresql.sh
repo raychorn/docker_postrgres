@@ -6,7 +6,7 @@ if [ "$ROOTDIR" = "." ]; then
 fi
 echo "1. ROOTDIR:$ROOTDIR"
 
-docker-compose -f docker-compose-postgresql.yml up -d
+docker-compose -f docker-compose-postgresql.yml up -d --build --force-recreate
 
 CID=$(docker ps -q -f name=postgres12)
 

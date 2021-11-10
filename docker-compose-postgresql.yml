@@ -2,8 +2,10 @@ version: '3'
 
 services:
   postgres12:
-    image: ubuntu:focal
     container_name: postgres12
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       TZ: America/Denver
       POSTGRES_USER: securexdev
