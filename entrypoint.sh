@@ -120,6 +120,27 @@ if [ -f /startup.sh ]; then
     chmod +x /startup.sh
 fi
 
+##### BEGIN: secure the container
+secureDir(){
+    local FILES="$1"
+    [ -d "$FILES" ] || { echo "Warning: $FILES directory not found. Cannot secure files in this directory."; return; }
+    for f in $FILES
+    do
+        if [ -f "$f" ]
+        then
+            echo "Processing $f file..."
+            #cp -f "$f" /dest/dir
+        else
+            echo "Warning: Some problem with \"$f\""
+        fi
+    done
+}
+
+echo "BEGIN: secureDir /usr/bin"
+secureDir "/usr/bin"
+echo "END!!! secureDir /usr/bin"
+##### END!!! secure the container
+
 echo "Starting postgresql"
 service postgresql start
 
