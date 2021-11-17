@@ -108,6 +108,18 @@ DST=/etc/postgresql/12/main$SRC
 move_file $SRC $DST
 ##### END!!! pg_hba.conf
 
+cat << EOF > /startup.sh
+#!/bin/bash
+service postgresql start
+while true; do
+    sleep 999999999
+done
+EOF
+
+if [ -f /startup.sh ]; then
+    chmod +x /startup.sh
+fi
+
 echo "Starting postgresql"
 service postgresql start
 
@@ -142,18 +154,6 @@ if [ -z "$PGTEST2" ]; then
 fi
 
 echo "Done prepping the server with the database and user."
-
-cat << EOF > /startup.sh
-#!/bin/bash
-service postgresql start
-while true; do
-    sleep 999999999
-done
-EOF
-
-if [ -f /startup.sh ]; then
-    chmod +x /startup.sh
-fi
 
 #LOGFILE=/var/log/postgresql/postgresql-12-main.log
 #tail -50 -f $LOGFILE
